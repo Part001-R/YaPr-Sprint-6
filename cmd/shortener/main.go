@@ -1,3 +1,23 @@
 package main
 
-func main() {}
+import (
+	"log"
+	"runtime/debug"
+
+	"github.com/Part001-R/YaPr-Sprint-6/internal/service"
+)
+
+func main() {
+
+	// Перехват паники
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("Паника в приложении: %v\n Стек вызовов:\n%s", r, string(debug.Stack()))
+		}
+	}()
+
+	// Запуск
+	if err := service.Run(); err != nil {
+		log.Fatalf("Работа прервана по причине: {%v}", err)
+	}
+}
