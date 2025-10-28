@@ -22,7 +22,7 @@ import (
 )
 
 type paramsURL struct {
-	flags            config.ConfigT
+	flags            config.Config
 	closeConDB       func()
 	storageLongShort handler.Actions
 	shortLongDB      *handler.ShortLongDB
@@ -368,7 +368,7 @@ func asynClearShortenerTableDB(db *sql.DB, rxChForDelete chan handler.DeleteDB, 
 // Параметры:
 //
 // flags - флаги.
-func prepareObserver(flags config.ConfigT) (observer.Action, error) {
+func prepareObserver(flags config.Config) (observer.Action, error) {
 
 	obsSrc := observer.NewObserver()
 

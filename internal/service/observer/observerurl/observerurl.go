@@ -11,12 +11,12 @@ import (
 )
 
 // Получение ID наблюдателя
-func (ou ObsURL) GetID() string {
+func (ou obsURL) GetID() string {
 	return ou.name
 }
 
 // Передача сообщения по сети
-func (ou ObsURL) SendMsg(msg observer.AuditEvent) error {
+func (ou obsURL) SendMsg(msg observer.AuditEvent) error {
 
 	msg.URL = strings.Trim(msg.URL, `\"`)
 

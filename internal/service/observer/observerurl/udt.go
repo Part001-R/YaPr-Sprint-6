@@ -8,26 +8,35 @@ import (
 	"github.com/Part001-R/YaPr-Sprint-6/internal/service/observer"
 )
 
-type ObsURL struct {
+// Представление наблюдателя
+type obsURL struct {
 	name       string
 	pathURL    string
 	clientHTTP *http.Client
 }
 
-var obs *ObsURL
+// Экземпляр наблюдателя
+var obs *obsURL
+
+// Обеспечение единоразовой инициализации
 var once sync.Once
 
-// Конструктор
-func NewObserverURL(obsID, obsURL string) observer.ActionsObservers {
+// Конструктор. Возвращается интерфейс.
+//
+// Параметры:
+//
+// obsID - ID наблюдателя.
+// obsPath - URL наблюдателя.
+func NewObserverURL(obsID, obsPath string) observer.ActionsObservers {
 	once.Do(func() {
 
 		client := &http.Client{
 			Timeout: 2 * time.Second,
 		}
 
-		obs = &ObsURL{
+		obs = &obsURL{
 			name:       obsID,
-			pathURL:    obsURL,
+			pathURL:    obsPath,
 			clientHTTP: client,
 		}
 	})

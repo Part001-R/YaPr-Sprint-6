@@ -23,7 +23,10 @@ type Action interface {
 	Notify(msg AuditEvent)
 }
 
+// Экземпляр источника оповещений
 var obsSrc *source
+
+// Обеспечение единоразовой инициализации
 var once sync.Once
 
 // Конструктор

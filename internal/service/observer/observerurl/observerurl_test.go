@@ -61,7 +61,7 @@ func Test_SendMsg_SUCCESS(t *testing.T) {
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
-	obsURL := &ObsURL{
+	obsURL := &obsURL{
 		name:       "HTTP",
 		pathURL:    server.URL + "/test",
 		clientHTTP: client,

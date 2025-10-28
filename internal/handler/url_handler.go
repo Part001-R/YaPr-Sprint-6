@@ -37,12 +37,14 @@ type DeleteDB struct {
 	UUID  string
 }
 
+// Для хранения в памяти
 type ShortLongURL struct {
 	ShorByLong  map[string]string
 	LongByShort map[string]string
 	mu          sync.RWMutex
 }
 
+// Для взаимодействия с БД.
 type ShortLongDB struct {
 	Ptr         *sql.DB
 	mu          sync.RWMutex
@@ -50,6 +52,7 @@ type ShortLongDB struct {
 	ChDoDelete  chan struct{}
 }
 
+// Сервис сокращения ссылок
 type ShortLong struct {
 	List             *ShortLongURL
 	DB               *ShortLongDB
@@ -59,30 +62,36 @@ type ShortLong struct {
 	FileStoragePath  string
 }
 
+// Для передачи содержимого файла в память
 type EventURL struct {
 	UUID        string `json:"uuid"`
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
 }
 
+// Для длинного представления URL
 type rxLongURL struct {
 	URL string `json:"url"`
 }
 
+// Для короткого представления URL
 type txShortURL struct {
 	Result string `json:"result"`
 }
 
+// Для приёма длинного представления URL и ID
 type rxLongURLBatch struct {
 	CorrelationID string `json:"correlation_id"`
 	OriginalURL   string `json:"original_url"`
 }
 
+// Для передачи сокращённого URL с ID
 type txShortURLBatch struct {
 	CorrelationID string `json:"correlation_id"`
 	ShortURL      string `json:"short_url"`
 }
 
+// Для передачи длинного URL с ID
 type txShortURLOriginalURL struct {
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
@@ -118,6 +127,7 @@ type Actions interface {
 	file
 }
 
+// Реализация проверки кодировки и формирование длительности выполнения обработчика запроса.
 func (sl *ShortLong) Middleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ow := w
@@ -209,6 +219,7 @@ func (sl *ShortLong) Middleware(h http.Handler) http.Handler {
 	})
 }
 
+// Реализация передачи аудиторам сообщения.
 func (sl *ShortLong) MiddlewareAudit(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
@@ -243,7 +254,7 @@ func (sl *ShortLong) MiddlewareAudit(h http.Handler) http.Handler {
 	})
 }
 
-// POST "/"
+// Обработчик формирования короткого представления из длинной (POST "/")
 func (sl *ShortLong) ShortURLFromLong(w http.ResponseWriter, r *http.Request) {
 
 	sl.List.mu.RLock()
@@ -256,6 +267,7 @@ func (sl *ShortLong) ShortURLFromLong(w http.ResponseWriter, r *http.Request) {
 	internalShortURLFromLong(sl.DB.Ptr, sl, w, r)
 }
 
+// Обработчик формирования группы коротких представлений из группы длинных представлений URL (POST "/api/shorten/batch")
 func (sl *ShortLong) ShortURLFromLongBatch(w http.ResponseWriter, r *http.Request) {
 
 	sl.DB.mu.RLock()
@@ -268,7 +280,7 @@ func (sl *ShortLong) ShortURLFromLongBatch(w http.ResponseWriter, r *http.Reques
 	internalShortURLFromLongBatch(sl.DB.Ptr, sl, w, r)
 }
 
-// GET "/{id}"
+// Обработчик представления оригинального URL, по принятому сокращению (GET "/{id}")
 func (sl *ShortLong) LongURLFromShort(w http.ResponseWriter, r *http.Request) {
 
 	sl.List.mu.RLock()
@@ -277,7 +289,7 @@ func (sl *ShortLong) LongURLFromShort(w http.ResponseWriter, r *http.Request) {
 	internalLongURLFromShort(sl.DB.Ptr, sl, w, r)
 }
 
-// POST "/api/shorten"
+// Обработчик формирования короткого представления по длинной. Формат JSON (POST "/api/shorten")
 func (sl *ShortLong) ShortURLFromLongJSON(w http.ResponseWriter, r *http.Request) {
 
 	sl.List.mu.RLock()
@@ -290,6 +302,7 @@ func (sl *ShortLong) ShortURLFromLongJSON(w http.ResponseWriter, r *http.Request
 	internalShortURLFromLongJSON(sl.DB.Ptr, sl, w, r)
 }
 
+// Копирование накопленных данных их файла в память. Возвращается ошибка.
 func (sl *ShortLong) LoadFileURL() error {
 
 	sl.List.mu.RLock()
@@ -346,6 +359,7 @@ func (sl *ShortLong) LoadFileURL() error {
 	return nil
 }
 
+// Обработчик проверки связи с БД (GET "/ping")
 func (sl *ShortLong) PingDB(w http.ResponseWriter, r *http.Request) {
 
 	// Пинг
@@ -364,6 +378,7 @@ func (sl *ShortLong) PingDB(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// Обработчик представления длинных URL (GET "/api/user/urls")
 func (sl *ShortLong) UserURLs(w http.ResponseWriter, r *http.Request) {
 
 	sl.DB.mu.RLock()
@@ -376,6 +391,7 @@ func (sl *ShortLong) UserURLs(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// Обработчик указания пар для асинхронного удаления (DELETE "/api/user/urls")
 func (sl *ShortLong) DeleteUserURLs(w http.ResponseWriter, r *http.Request) {
 
 	sl.DB.mu.RLock()
@@ -386,7 +402,10 @@ func (sl *ShortLong) DeleteUserURLs(w http.ResponseWriter, r *http.Request) {
 
 // ---
 
+// Объект хранения данных в памяти
 var shortenrMemory *ShortLongURL
+
+// Для обеспечения единоразового выполняения инициализации конструктором
 var OnceMemory sync.Once
 
 // Конструктор. Возвращает хранилище в памяти.
@@ -401,7 +420,10 @@ func NewShortenerMemory() *ShortLongURL {
 	return shortenrMemory
 }
 
+// Сконфигурироанный экземпляр хранения в БД
 var shortenrDB *ShortLongDB
+
+// Для обеспечения единоразового выполняения инициализации конструктором
 var OnceDB sync.Once
 
 // Конструктор. Возвращает хранилище БД.
@@ -421,7 +443,10 @@ func NewShortenerDB(db *sql.DB) *ShortLongDB {
 	return shortenrDB
 }
 
+// Сконфигурироанный экземпляр сервиса
 var shortener *ShortLong
+
+// Для обеспечения единоразового выполняения инициализации конструктором
 var OnceShortener sync.Once
 
 // Конструктор. Возвращает интерфейс объекта.
@@ -431,7 +456,7 @@ var OnceShortener sync.Once
 // storage - хранилище пар соответствий ссылок.
 // db - указатель на БД.
 // fl - флаги.
-func NewShortener(storage *ShortLongURL, db *ShortLongDB, fl flags.ConfigT, os observer.Action) Actions {
+func NewShortener(storage *ShortLongURL, db *ShortLongDB, fl flags.Config, os observer.Action) Actions {
 	OnceShortener.Do(func() {
 		shortener = &ShortLong{
 			List:             storage,
@@ -1007,7 +1032,7 @@ func internalShortURLFromLong(db *sql.DB, sl *ShortLong, w http.ResponseWriter, 
 	}
 
 	// Ответ
-	err = InternalShortURLFromLongLayerTx(w, db, result, flagConflict)
+	err = InternalShortURLFromLongLayerTx(w, result, flagConflict)
 	if err != nil {
 		switch err.Error() {
 		case "500":
