@@ -8,9 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
-	"time"
 
 	"github.com/Part001-R/YaPr-Sprint-6/internal/handler"
 	"github.com/Part001-R/YaPr-Sprint-6/internal/service/db"
@@ -26,7 +24,6 @@ import (
 type paramsURL struct {
 	flags            config.ConfigT
 	closeConDB       func()
-	storageMetrics   handler.MetricsI
 	storageLongShort handler.Actions
 	shortLongDB      *handler.ShortLongDB
 }
@@ -92,19 +89,6 @@ func prepare() (*paramsURL, error) {
 		}
 	}
 
-	// Метрики
-	metrics := handler.NewMetricsMemory()
-	metricsDB := handler.NewMetricsDB(dbPtr)
-
-	storageMetrics := handler.NewMetricsStorage(metrics, metricsDB, flags)
-
-	if flags.RestoreMetr == "true" {
-		err := storageMetrics.LoadFileMetrics()
-		if err != nil {
-			return &paramsURL{}, fmt.Errorf("ошибка в prepare: функция storageMetrics.LoadFileMetrics вернула ошибку -> <%w>", err)
-		}
-	}
-
 	// Ссылки
 	shortLong := handler.NewShortenerMemory()
 	shortLongDB := handler.NewShortenerDB(dbPtr)
@@ -119,7 +103,6 @@ func prepare() (*paramsURL, error) {
 	return &paramsURL{
 		flags:            flags,
 		closeConDB:       funcCloseDB,
-		storageMetrics:   storageMetrics,
 		storageLongShort: storageLongShort,
 		shortLongDB:      shortLongDB,
 	}, nil
@@ -143,12 +126,6 @@ func server(params *paramsURL) error {
 	err := handlersShortener(cr, params)
 	if err != nil {
 		return fmt.Errorf("функция handlersShortener, вернула ошибку: <%w>", err)
-	}
-
-	// Точки входа - Metrics
-	err = handlersMetric(cr, params)
-	if err != nil {
-		return fmt.Errorf("функция handlersMetric, вернула ошибку: <%w>", err)
 	}
 
 	// Действия
@@ -187,56 +164,26 @@ func startUpHTTPServer(srv *http.Server, txErr chan error) {
 	txErr <- err
 }
 
-// Функция выполняет периодическое сохранение метрик в файл.
-//
-// Параметры:
-//
-// params - параметры для работы функции.
-// txErr - канал для передачи ошибок выполнения.
-func periodSaveMetrics(params *paramsURL, txErr chan error) {
-
-	// Проверка параметров
-	if params == nil {
-		txErr <- errors.New("ошибка periodSaveMetrics: в параметре params, нет указателя")
-		return
-	}
-	if txErr == nil {
-		txErr <- errors.New("ошибка periodSaveMetrics: в параметре txErr, нет указателя")
-		return
-	}
-
-	// Логика
-	if params.flags.StoreIntervalMetr != "0" {
-
-		periodSec, err := strconv.Atoi(params.flags.StoreIntervalMetr)
-		if err != nil {
-			txErr <- fmt.Errorf("ошибка periodSaveMetrics: ошибка при преобразовании интервала сохранения: <%s>", params.flags.StoreIntervalMetr)
-			return
-		}
-
-		ticker := time.NewTicker(time.Duration(periodSec) * time.Second)
-		defer ticker.Stop()
-
-		// Запуск Go рутины для периодического сохранения в файл
-		go func() {
-			for range ticker.C {
-				if err := params.storageMetrics.StorageMetrics(); err != nil {
-					txErr <- fmt.Errorf("функция StorageMetrics вернула ошибку: <%w>", err)
-					return
-				}
-			}
-		}()
-	}
-}
-
 // Функция определяет причину остановки выполнения. При штатной остановке, сохраняются метрики.
 //
 // Параметры:
 //
 // data - набор данных для обеспечения работы функции.
-func signalsStopRun(data checkReasonStop, params *paramsURL) error {
-	defer params.closeConDB()
+func signalsStopRun(data *checkReasonStop) error {
 
+	addr := data.srvConf.Addr
+
+	// Отложенное закрытие базы данных
+	defer func() {
+		if data.params.closeConDB != nil { // Приложение может запуститься без подключения к БД.
+			data.params.closeConDB()
+		}
+	}()
+
+	// Проверка аргумента
+	if data == nil {
+		return errors.New("ошибка в signalsStopRun: data не инициализирован")
+	}
 	if data.sigSys == nil {
 		return errors.New("ошибка в signalsStopRun: канал sigSys не инициализирован")
 	}
@@ -252,25 +199,16 @@ func signalsStopRun(data checkReasonStop, params *paramsURL) error {
 	if data.params == nil {
 		return errors.New("ошибка в signalsStopRun: params не инициализированы")
 	}
-	if data.params.storageMetrics == nil {
-		return errors.New("ошибка в signalsStopRun: storageMetrics не инициализирована")
-	}
 
 	select {
 	case <-data.sigSys:
-
-		err := data.params.storageMetrics.StorageMetrics()
-		if err != nil {
-			logger.Log.Error("ошибка сохранения метрик при штатном завершении работы", zap.String("ошибка", err.Error()))
-		}
-
-		logger.Log.Info("сервер остановлен штатно", zap.String("address", data.srvConf.Addr))
+		logger.Log.Info("сервер остановлен штатно", zap.String("address", addr))
 		return nil
 	case err := <-data.chSrvErr:
-		logger.Log.Error("ошибка сервера", zap.String("address", data.srvConf.Addr), zap.String("ошибка", err.Error()))
+		logger.Log.Error("ошибка сервера", zap.String("address", addr), zap.String("ошибка", err.Error()))
 		return err
 	case err := <-data.chStorageErr:
-		logger.Log.Error("ошибка периодического сохранения метрик в файл", zap.String("address", data.srvConf.Addr), zap.String("ошибка", err.Error()))
+		logger.Log.Error("ошибка периодического сохранения метрик в файл", zap.String("address", addr), zap.String("ошибка", err.Error()))
 		return err
 	}
 }
@@ -303,7 +241,7 @@ func actions(params *paramsURL, cr *chi.Mux) error {
 
 	signal.Notify(sigSys, syscall.SIGINT, syscall.SIGTERM)
 
-	data := checkReasonStop{
+	data := &checkReasonStop{
 		chSrvErr:     chSrvErr,
 		chStorageErr: chStorageErr,
 		sigSys:       sigSys,
@@ -314,14 +252,11 @@ func actions(params *paramsURL, cr *chi.Mux) error {
 	// Запуск сервера
 	go startUpHTTPServer(srvConf, chSrvErr)
 
-	// Обработка периодического сохранения метрик
-	go periodSaveMetrics(params, chStorageErr)
-
 	// Запуск обработчика асинхронной очистки таблицы shortener БД.
 	go asynClearShortenerTableDB(params.shortLongDB.Ptr, params.shortLongDB.ChForDelete, params.shortLongDB.ChDoDelete)
 
 	// Приём сигналов остановки
-	err := signalsStopRun(data, params)
+	err := signalsStopRun(data)
 	if err != nil {
 		return fmt.Errorf("функция signalsStopRun вернула ошибку: <%w>", err)
 	}
@@ -363,34 +298,6 @@ func handlersShortener(cr *chi.Mux, p *paramsURL) error {
 		r.Post("/", http.HandlerFunc(p.storageLongShort.ShortURLFromLong))
 		r.Post("/api/shorten", http.HandlerFunc(p.storageLongShort.ShortURLFromLongJSON))
 		r.Get("/{id}", http.HandlerFunc(p.storageLongShort.LongURLFromShort))
-	})
-
-	return nil
-}
-
-// Функция содержите перечень точек входа для метрик. Возвращает ошибку.
-//
-// Параметры:
-//
-// cr - мультиплексор.
-// р - параметры для работы.
-func handlersMetric(cr *chi.Mux, p *paramsURL) error {
-
-	if cr == nil {
-		return errors.New("ошибка в handlersMetric: в аргументе cr нет указателя")
-	}
-	if p == nil {
-		return errors.New("ошибка в handlersMetric: в аргументе p нет указателя")
-	}
-
-	cr.Group(func(r chi.Router) {
-		r.Use(p.storageMetrics.Middleware)
-
-		cr.Post("/update/{type}/{name}/{value}", http.HandlerFunc(p.storageMetrics.UpdateMetricByTypeAndName))
-		cr.Post("/update", http.HandlerFunc(p.storageMetrics.MetricByJSON))
-		cr.Get("/", http.HandlerFunc(p.storageMetrics.AllMetricsHTML))
-		cr.Get("/value/{type}/{name}", http.HandlerFunc(p.storageMetrics.ValueMetricByTypeAndName))
-		cr.Post("/updates/", http.HandlerFunc(p.storageMetrics.UpdateMetricByTypeAndNameBatch))
 	})
 
 	return nil

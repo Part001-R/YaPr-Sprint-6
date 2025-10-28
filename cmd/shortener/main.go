@@ -8,7 +8,6 @@ import (
 )
 
 func main() {
-
 	// Перехват паники
 	defer func() {
 		if r := recover(); r != nil {
@@ -16,7 +15,7 @@ func main() {
 		}
 	}()
 
-	// Запуск
+	// Запуск приложения
 	if err := service.Run(); err != nil {
 		log.Fatalf("Работа прервана по причине: {%v}", err)
 	}

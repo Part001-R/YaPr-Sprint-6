@@ -40,12 +40,12 @@ type DeleteDB struct {
 type ShortLongURL struct {
 	ShorByLong  map[string]string
 	LongByShort map[string]string
-	Mu          sync.RWMutex
+	mu          sync.RWMutex
 }
 
 type ShortLongDB struct {
 	Ptr         *sql.DB
-	Mu          sync.RWMutex
+	mu          sync.RWMutex
 	ChForDelete chan DeleteDB
 	ChDoDelete  chan struct{}
 }
@@ -246,8 +246,8 @@ func (sl *ShortLong) MiddlewareAudit(h http.Handler) http.Handler {
 // POST "/"
 func (sl *ShortLong) ShortURLFromLong(w http.ResponseWriter, r *http.Request) {
 
-	sl.List.Mu.RLock()
-	defer sl.List.Mu.RUnlock()
+	sl.List.mu.RLock()
+	defer sl.List.mu.RUnlock()
 
 	sl.BaseAddrShortURL = strings.TrimSuffix(sl.BaseAddrShortURL, "/")
 	sl.BaseAddrShortURL = sl.BaseAddrShortURL + "/"
@@ -258,8 +258,8 @@ func (sl *ShortLong) ShortURLFromLong(w http.ResponseWriter, r *http.Request) {
 
 func (sl *ShortLong) ShortURLFromLongBatch(w http.ResponseWriter, r *http.Request) {
 
-	sl.DB.Mu.RLock()
-	defer sl.DB.Mu.RUnlock()
+	sl.DB.mu.RLock()
+	defer sl.DB.mu.RUnlock()
 
 	sl.BaseAddrShortURL = strings.TrimSuffix(sl.BaseAddrShortURL, "/")
 	sl.BaseAddrShortURL = sl.BaseAddrShortURL + "/"
@@ -271,8 +271,8 @@ func (sl *ShortLong) ShortURLFromLongBatch(w http.ResponseWriter, r *http.Reques
 // GET "/{id}"
 func (sl *ShortLong) LongURLFromShort(w http.ResponseWriter, r *http.Request) {
 
-	sl.List.Mu.RLock()
-	defer sl.List.Mu.RUnlock()
+	sl.List.mu.RLock()
+	defer sl.List.mu.RUnlock()
 
 	internalLongURLFromShort(sl.DB.Ptr, sl, w, r)
 }
@@ -280,8 +280,8 @@ func (sl *ShortLong) LongURLFromShort(w http.ResponseWriter, r *http.Request) {
 // POST "/api/shorten"
 func (sl *ShortLong) ShortURLFromLongJSON(w http.ResponseWriter, r *http.Request) {
 
-	sl.List.Mu.RLock()
-	defer sl.List.Mu.RUnlock()
+	sl.List.mu.RLock()
+	defer sl.List.mu.RUnlock()
 
 	sl.BaseAddrShortURL = strings.TrimSuffix(sl.BaseAddrShortURL, "/")
 	sl.BaseAddrShortURL = sl.BaseAddrShortURL + "/"
@@ -292,8 +292,8 @@ func (sl *ShortLong) ShortURLFromLongJSON(w http.ResponseWriter, r *http.Request
 
 func (sl *ShortLong) LoadFileURL() error {
 
-	sl.List.Mu.RLock()
-	defer sl.List.Mu.RUnlock()
+	sl.List.mu.RLock()
+	defer sl.List.mu.RUnlock()
 
 	// Проверка
 	if sl.FileStoragePath == "" {
@@ -366,8 +366,8 @@ func (sl *ShortLong) PingDB(w http.ResponseWriter, r *http.Request) {
 
 func (sl *ShortLong) UserURLs(w http.ResponseWriter, r *http.Request) {
 
-	sl.DB.Mu.RLock()
-	defer sl.DB.Mu.RUnlock()
+	sl.DB.mu.RLock()
+	defer sl.DB.mu.RUnlock()
 
 	sl.BaseAddrShortURL = strings.TrimSuffix(sl.BaseAddrShortURL, "/")
 	sl.BaseAddrShortURL = sl.BaseAddrShortURL + "/"
@@ -378,8 +378,8 @@ func (sl *ShortLong) UserURLs(w http.ResponseWriter, r *http.Request) {
 
 func (sl *ShortLong) DeleteUserURLs(w http.ResponseWriter, r *http.Request) {
 
-	sl.DB.Mu.RLock()
-	defer sl.DB.Mu.RUnlock()
+	sl.DB.mu.RLock()
+	defer sl.DB.mu.RUnlock()
 
 	internalDeleteUserURLs(sl.DB.Ptr, sl, w, r)
 }
@@ -395,7 +395,7 @@ func NewShortenerMemory() *ShortLongURL {
 		shortenrMemory = &ShortLongURL{
 			ShorByLong:  make(map[string]string),
 			LongByShort: make(map[string]string),
-			Mu:          sync.RWMutex{},
+			mu:          sync.RWMutex{},
 		}
 	})
 	return shortenrMemory
@@ -413,7 +413,7 @@ func NewShortenerDB(db *sql.DB) *ShortLongDB {
 	OnceDB.Do(func() {
 		shortenrDB = &ShortLongDB{
 			Ptr:         db,
-			Mu:          sync.RWMutex{},
+			mu:          sync.RWMutex{},
 			ChForDelete: make(chan DeleteDB),
 			ChDoDelete:  make(chan struct{}),
 		}
@@ -902,8 +902,8 @@ func workWithRxData(db *sql.DB, sl *ShortLong, rxLongURL, uuidRx string) (short 
 		return "", fmt.Errorf("в принятом аргументе sl, нет указателя на мапы")
 	}
 
-	sl.DB.Mu.RLock()
-	defer sl.DB.Mu.RUnlock()
+	sl.DB.mu.RLock()
+	defer sl.DB.mu.RUnlock()
 
 	// Работа
 	var shortURL string

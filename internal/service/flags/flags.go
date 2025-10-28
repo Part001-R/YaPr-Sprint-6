@@ -6,16 +6,13 @@ import (
 )
 
 type ConfigT struct {
-	ServerAddr          string
-	BaseAddrShortURL    string
-	LogLevel            string
-	FileStoragePath     string
-	AuditFile           string // Путь к файлу-приёмнику, в который сохраняются логи аудита
-	AuditURL            string // Полный URL удаленного сервера-приёмника, куда отправляются логи аудита
-	StoreIntervalMetr   string // Metrics
-	FileStoragePathMetr string // Metrics
-	RestoreMetr         string // Metrics
-	DSNDB               string // Metrics
+	ServerAddr       string
+	BaseAddrShortURL string
+	LogLevel         string
+	FileStoragePath  string
+	AuditFile        string
+	AuditURL         string
+	DSNDB            string
 }
 
 func ParseFlags() ConfigT {
@@ -30,11 +27,6 @@ func ParseFlags() ConfigT {
 	flag.StringVar(&flags.DSNDB, "d", "", "dsn подключения к БД")
 	flag.StringVar(&flags.AuditFile, "audit-file", "", "путь к файлу-приёмнику")
 	flag.StringVar(&flags.AuditURL, "audit-url", "", "URL удаленного сервера-приёмника")
-
-	// Metrics
-	flag.StringVar(&flags.StoreIntervalMetr, "i", "300", "периодичность сохранения метрик в файл")
-	flag.StringVar(&flags.FileStoragePathMetr, "fm", "storageMetrics.json", "хранилище метрик")
-	flag.StringVar(&flags.RestoreMetr, "r", "false", "загрузка данных из файла при старте")
 
 	flag.Parse()
 
@@ -59,17 +51,6 @@ func ParseFlags() ConfigT {
 	}
 	if envValue := os.Getenv("AUDIT_URL"); envValue != "" {
 		flags.AuditURL = envValue
-	}
-
-	// Metrics
-	if envValue := os.Getenv("STORE_INTERVAL_M"); envValue != "" {
-		flags.StoreIntervalMetr = envValue
-	}
-	if envValue := os.Getenv("FILE_STORAGE_PATH_M"); envValue != "" {
-		flags.FileStoragePathMetr = envValue
-	}
-	if envValue := os.Getenv("RESTORE_M"); envValue != "" {
-		flags.RestoreMetr = envValue
 	}
 
 	return flags

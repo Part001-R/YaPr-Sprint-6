@@ -524,14 +524,15 @@ func internalDeleteUserURLsLayerRx(r *http.Request) (rxArr []string, uuidRx stri
 	// Логика
 	uuidRx = r.Header.Get("Authorization")
 
-	rxByteBody, err := io.ReadAll(r.Body)
-	if err != nil {
-		logger.Log.Error("Ошибка чтения тела запроса",
+	// Используем json.Decoder для поточной разбора
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&rxArr); err != nil {
+		logger.Log.Error("Ошибка сериализации данных",
 			zap.Error(err),
 			zap.String("method", r.Method),
 			zap.String("url", r.URL.String()),
 		)
-		return nil, "", fmt.Errorf("%d", http.StatusInternalServerError)
+		return nil, "", fmt.Errorf("%d", http.StatusBadRequest)
 	}
 	defer func() {
 		if err := r.Body.Close(); err != nil {
@@ -543,19 +544,7 @@ func internalDeleteUserURLsLayerRx(r *http.Request) (rxArr []string, uuidRx stri
 		}
 	}()
 
-	rxArray := make([]string, 0)
-
-	if err := json.Unmarshal(rxByteBody, &rxArray); err != nil {
-		logger.Log.Error("Ошибка сериализации данных",
-			zap.Error(err),
-			zap.String("method", r.Method),
-			zap.String("url", r.URL.String()),
-		)
-		return nil, "", fmt.Errorf("%d", http.StatusBadRequest)
-	}
-
 	// Ответ
-	rxArr = rxArray
 	return rxArr, uuidRx, nil
 }
 

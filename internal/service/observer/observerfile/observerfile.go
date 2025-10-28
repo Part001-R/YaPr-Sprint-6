@@ -12,12 +12,12 @@ import (
 )
 
 // Получение ID наблюдателя
-func (of *obsFile) GetID() string {
+func (of obsFile) GetID() string {
 	return of.name
 }
 
 // Сохранение сообщения в файл
-func (of *obsFile) SendMsg(msg observer.AuditEvent) error {
+func (of obsFile) SendMsg(msg observer.AuditEvent) error {
 
 	file, err := os.OpenFile(of.filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
