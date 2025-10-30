@@ -15,13 +15,13 @@ import (
 func Test_SendMsg_SUCCESS(t *testing.T) {
 
 	type AuditEvent struct {
-		Timestamp int64  `json:"ts"`                // unix timestamp события
-		Action    string `json:"action"`            // действие: shorten (создание) или follow (прохождение по ссылке)
-		UserID    string `json:"user_id,omitempty"` // идентификатор пользователя, если есть
-		URL       string `json:"url"`               // оригинальный (не сокращённый) URL
+		Timestamp int64  `json:"ts"`                // unix timestamp события.
+		Action    string `json:"action"`            // действие: shorten (создание) или follow (прохождение по ссылке).
+		UserID    string `json:"user_id,omitempty"` // идентификатор пользователя, если есть.
+		URL       string `json:"url"`               // оригинальный (не сокращённый) URL.
 	}
 
-	// Подготовка тестового экземпляра obsFile
+	// Подготовка тестового экземпляра obsFile.
 	obsFileHandler := &obsFile{
 		filePath: "test_audit_log.json",
 	}
@@ -42,7 +42,7 @@ func Test_SendMsg_SUCCESS(t *testing.T) {
 		URL:       "http://bar.com",
 	}
 
-	// Данные для тестов
+	// Данные для тестов.
 	dataTest := []struct {
 		nameT   string
 		msgT    AuditEvent
@@ -60,11 +60,11 @@ func Test_SendMsg_SUCCESS(t *testing.T) {
 		},
 	}
 
-	// Тесты
+	// Тесты.
 	for _, tt := range dataTest {
 		t.Run(tt.nameT, func(t *testing.T) {
 
-			// Открытие файла
+			// Открытие файла.
 			file, err := os.OpenFile(obsFileHandler.filePath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
 			require.NoErrorf(t, err, "неожиданная ошибка при открытии файла <%v>", err)
 
@@ -79,15 +79,15 @@ func Test_SendMsg_SUCCESS(t *testing.T) {
 
 			}()
 
-			// Передача данных в файл
+			// Передача данных в файл.
 			err = obsFileHandler.SendMsg(observer.AuditEvent(tt.msgT))
 			require.NoErrorf(t, err, "ошибка при отправке сообщения <%v>", err)
 
-			// Чтение файла
+			// Чтение файла.
 			data, err := os.ReadFile(obsFileHandler.filePath)
 			require.NoErrorf(t, err, "ошибка при чтении файла <%v>", err)
 
-			// Проверка результата
+			// Проверка результата.
 			rxStr := strings.TrimSpace(string(data))
 			assert.Equalf(t, tt.wantMsg, rxStr, "некорректный URL: ожидалось <%s>, получено <%s>", tt.wantMsg, rxStr)
 

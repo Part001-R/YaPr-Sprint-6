@@ -1,3 +1,7 @@
+// observerfile пакет наблюдателя file. Секция методов.
+//
+// GetID - получение ID наблюдателя.
+// SendMsg - передача оповещения.
 package observerfile
 
 import (
@@ -11,12 +15,16 @@ import (
 	"go.uber.org/zap"
 )
 
-// Получение ID наблюдателя
+// Получение ID наблюдателя. Возвращается ID.
 func (of obsFile) GetID() string {
 	return of.name
 }
 
-// Сохранение сообщения в файл
+// SendMsg реализует сохранение сообщения в файл. Возвращается ошибка.
+//
+// Параметры:
+//
+//	msg - сообщение оповещения.
 func (of obsFile) SendMsg(msg observer.AuditEvent) error {
 
 	file, err := os.OpenFile(of.filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)

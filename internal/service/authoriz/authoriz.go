@@ -1,3 +1,4 @@
+// authoriz пакет, для установки cookie.
 package authoriz
 
 import (
@@ -14,12 +15,12 @@ type User struct {
 // Для использования в cookie
 var UUID string
 
-// Функцуия выполняет проверку наличая куки с идентификатором пользователя и устанавливать её, если она отсутствует или недействительна.
+// SetUserCookie выполняет проверку наличая куки с идентификатором пользователя и устанавливать её, если она отсутствует или недействительна.
 //
 // Параметры:
 //
-// w - http.ResponseWriter.
-// userID - ID пользователя.
+//	w - http.ResponseWriter.
+//	userID - ID пользователя.
 func SetUserCookie(w http.ResponseWriter, userID string) {
 	cookie := http.Cookie{
 		Name:     "user_id",
@@ -31,7 +32,7 @@ func SetUserCookie(w http.ResponseWriter, userID string) {
 	http.SetCookie(w, &cookie)
 }
 
-// Функция выполняет генерацию уникального ID. Возвращает уникальный ID.
+// GenerateUniqueID выполняет генерацию уникального ID. Возвращает уникальный ID.
 func GenerateUniqueID() string {
 	return uuid.New().String()
 }

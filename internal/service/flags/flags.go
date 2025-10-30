@@ -1,3 +1,5 @@
+// flags пакет для взаимодействия с флагами командной строки.
+// Инициализируются переменные экземпляра при запуске приложения.
 package flags
 
 import (
@@ -6,7 +8,7 @@ import (
 	"sync"
 )
 
-// Флаги сервиса
+// Флаги сервиса.
 type Config struct {
 	ServerAddr       string
 	BaseAddrShortURL string

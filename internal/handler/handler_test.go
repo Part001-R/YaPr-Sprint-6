@@ -18,9 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// URL
-
-// internalShortURLFromLong
+// internalShortURLFromLong.
 func Test_internalShortURLFromLong_SUCCESS(t *testing.T) {
 
 	conf := &ShortLong{
@@ -235,7 +233,7 @@ func Test_internalShortURLFromLong_FAULT(t *testing.T) {
 	}
 }
 
-// internalShortURLFromLongJSON
+// internalShortURLFromLongJSON.
 func Test_internalShortURLFromLongJSON_SUCCESS(t *testing.T) {
 
 	conf := &ShortLong{
@@ -470,7 +468,7 @@ func Test_internalShortURLFromLongJSON_FAULT(t *testing.T) {
 	}
 }
 
-// internalLongURLFromShort
+// internalLongURLFromShort.
 func Test_internalLongURLFromShort_SUCCESS(t *testing.T) {
 
 	conf := &ShortLong{
@@ -666,7 +664,7 @@ func Test_internalLongURLFromShort_FAULT(t *testing.T) {
 	}
 }
 
-// LoadFileURL
+// LoadFileURL.
 func Test_LoadFileURL_SUCCESS(t *testing.T) {
 
 	shortLong := NewShortenerMemory()
@@ -787,7 +785,7 @@ func Test_LoadFileURL_FAULT(t *testing.T) {
 	}
 }
 
-// storageDBURL
+// storageDBURL.
 func Test_storageDBURL_SUCCESS(t *testing.T) {
 
 	testsData := []struct {
@@ -890,7 +888,7 @@ func Test_storageDBURL_FAULT(t *testing.T) {
 	}
 }
 
-// ShortURLFromLongBatch
+// ShortURLFromLongBatch.
 func Test_ShortURLFromLongBatch_SUCCESS(t *testing.T) {
 
 	// Подготовка данных для тестов
@@ -1023,7 +1021,7 @@ func Test_ShortURLFromLongBatch_FAULT(t *testing.T) {
 	}
 }
 
-// storageBatchMap
+// storageBatchMap.
 func Test_storageBatchMap_SUCCESS(t *testing.T) {
 
 	testData := []struct {
@@ -1165,7 +1163,7 @@ func Test_storageBatchMap_FAULT(t *testing.T) {
 	}
 }
 
-// workWithRxData
+// workWithRxData.
 func Test_workWithRxData_SUCCESS(t *testing.T) {
 
 	conf := &ShortLong{
@@ -1333,7 +1331,7 @@ func Test_workWithRxData_FAULT(t *testing.T) {
 	}
 }
 
-// Middleware
+// Middleware.
 func Test_Middleware_SUCCESS(t *testing.T) {
 
 	// Конфигурация
@@ -1464,7 +1462,7 @@ func Test_Middleware_FAULT(t *testing.T) {
 	}
 }
 
-// internalShortURLFromLongBatch
+// internalShortURLFromLongBatch.
 func Test_internalShortURLFromLongBatch_SUCCESS(t *testing.T) {
 
 	// Конфигурация
@@ -1708,7 +1706,7 @@ func Test_internalShortURLFromLongBatch_FAULT(t *testing.T) {
 	}
 }
 
-// InternalDeleteUserURLs
+// InternalDeleteUserURLs.
 func Test_InternalDeleteUserURLs_SUCCESS(t *testing.T) {
 
 	conf := &ShortLong{

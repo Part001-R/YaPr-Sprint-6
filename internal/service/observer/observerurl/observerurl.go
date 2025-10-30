@@ -1,3 +1,7 @@
+// observerurl пакет наблюдателя URL. Секция с методами.
+//
+// GetID - получение ID наблюдателя.
+// SendMsg - передача оповещения.
 package observerurl
 
 import (
@@ -10,12 +14,16 @@ import (
 	"github.com/Part001-R/YaPr-Sprint-6/internal/service/observer"
 )
 
-// Получение ID наблюдателя
+// GetID получает ID наблюдателя. Возвращается ID.
 func (ou obsURL) GetID() string {
 	return ou.name
 }
 
-// Передача сообщения по сети
+// SendMsg реализация передачи сообщения по сети. Возвращается ошибка.
+//
+// Параметры:
+//
+//	msg - сообщение оповещения.
 func (ou obsURL) SendMsg(msg observer.AuditEvent) error {
 
 	msg.URL = strings.Trim(msg.URL, `\"`)

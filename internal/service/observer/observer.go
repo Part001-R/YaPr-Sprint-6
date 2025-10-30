@@ -1,3 +1,8 @@
+// observer пакет реализации паттерна Наблюдатель. Секция с методами объекта.
+//
+// RegistrationObserver - дабавление наблюдателя.
+// UnRegistrationObserver - удаление наблюдателя.
+// Notify - Оповещение.
 package observer
 
 import (
@@ -7,7 +12,11 @@ import (
 	"go.uber.org/zap"
 )
 
-// Резистрация наблюдателя
+// RegistrationObserver регистрация наблюдателя.
+//
+// Парметры:
+//
+//	o - интерфейс наблюдателя.
 func (s *source) RegistrationObserver(o ActionsObservers) {
 	s.mtx.RLock()
 	defer s.mtx.RUnlock()
@@ -19,7 +28,11 @@ func (s *source) RegistrationObserver(o ActionsObservers) {
 	logger.Log.Info("Зарегистрирован наблюдатель", zap.String("obsID", o.GetID()))
 }
 
-// Удаление наблюдателя
+// UnRegistrationObserver удаляет наблюдателя.
+//
+// Парметры:
+//
+//	o - интерфейс наблюдателя.
 func (s *source) UnRegistrationObserver(o ActionsObservers) {
 	s.mtx.RLock()
 	defer s.mtx.RUnlock()
@@ -28,7 +41,11 @@ func (s *source) UnRegistrationObserver(o ActionsObservers) {
 	logger.Log.Info("Удалён наблюдатель", zap.String("obsID", o.GetID()))
 }
 
-// Оповещение
+// Notify вызов оповещений наблюдателей.
+//
+// Парметры:
+//
+//	msg - сообщение оповещения.
 func (s *source) Notify(msg AuditEvent) {
 	s.mtx.RLock()
 	defer s.mtx.RUnlock()

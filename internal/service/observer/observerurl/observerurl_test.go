@@ -36,14 +36,14 @@ func Test_SendMsg_SUCCESS(t *testing.T) {
 		URL:       "http://example.com",
 	}
 
-	// Мок сервер
+	// Мок сервер.
 	mux := http.NewServeMux()
 	mux.HandleFunc("/test", func(w http.ResponseWriter, r *http.Request) {
 		var payload AuditEvent
 		err := json.NewDecoder(r.Body).Decode(&payload)
 		require.NoError(t, err)
 
-		// Проверка
+		// Проверка.
 		if payload.UserID == "" {
 			assert.Equal(t, payload, msg1)
 		} else {
@@ -57,7 +57,7 @@ func Test_SendMsg_SUCCESS(t *testing.T) {
 		Timeout: 1 * time.Second,
 	}
 
-	// Запуск тестового HTTP сервера
+	// Запуск тестового HTTP сервера.
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
@@ -67,11 +67,11 @@ func Test_SendMsg_SUCCESS(t *testing.T) {
 		clientHTTP: client,
 	}
 
-	// Тестирование первого сообщения
+	// Тестирование первого сообщения.
 	err := obsURL.SendMsg(observer.AuditEvent(msg1))
 	require.NoError(t, err, "ошибка при отправке первого сообщения <%v>", err)
 
-	// Тестирование второго сообщения
+	// Тестирование второго сообщения.
 	err = obsURL.SendMsg(observer.AuditEvent(msg2))
 	require.NoError(t, err, "ошибка при отправке второго сообщения <%v>", err)
 }

@@ -1,3 +1,4 @@
+// gz пакет для работы с архивами gzip.
 package gz
 
 import (
@@ -6,18 +7,18 @@ import (
 	"net/http"
 )
 
-// compressWriter реализует интерфейс http.ResponseWriter и позволяет прозрачно для сервера
-// сжимать передаваемые данные и выставлять правильные HTTP-заголовки
+// compressWriter реализует интерфейс http.ResponseWriter и позволяет прозрачно для сервера.
+// Сжимать передаваемые данные и выставлять правильные HTTP-заголовки.
 type compressWriter struct {
 	w  http.ResponseWriter
 	zw *gzip.Writer
 }
 
-// Конструктор. Возвращает экземпляр writer.
+// NewCompressWriter конструктор. Возвращает экземпляр writer.
 //
 // Параметры:
 //
-// w - интерфейс ответа.
+//	w - интерфейс ответа.
 func NewCompressWriter(w http.ResponseWriter) *compressWriter {
 
 	return &compressWriter{
@@ -26,25 +27,25 @@ func NewCompressWriter(w http.ResponseWriter) *compressWriter {
 	}
 }
 
-// Обработка заголовков. Возвращаются заголовки.
+// Header обрабатывает заголовки. Возвращаются заголовки.
 func (c *compressWriter) Header() http.Header {
 	return c.w.Header()
 }
 
-// Реализация записи. Возвращается количество записанных байт и ошибка.
+// Write реализует запись. Возвращается количество записанных байт и ошибка.
 //
 // Параметры:
 //
-// p - байты для записи.
+//	p - байты для записи.
 func (c *compressWriter) Write(p []byte) (int, error) {
 	return c.zw.Write(p)
 }
 
-// Добавление заголовка Content-Encoding.
+// WriteHeader добавляет заголовок Content-Encoding.
 //
 // Параметры:
 //
-// statusCode - код статуса.
+//	statusCode - код статуса.
 func (c *compressWriter) WriteHeader(statusCode int) {
 	if statusCode < 300 {
 		c.w.Header().Set("Content-Encoding", "gzip")
@@ -66,11 +67,11 @@ type compressReader struct {
 
 // --------------------------------------------------
 
-// Конструктор. Возвращает экземпляр reader и ошибку.
+// NewCompressReader конструктор. Возвращает экземпляр reader и ошибку.
 //
 // Параметры:
 //
-// r - интерфейс чтения.
+//	r - интерфейс чтения.
 func NewCompressReader(r io.ReadCloser) (*compressReader, error) {
 	zr, err := gzip.NewReader(r)
 	if err != nil {
@@ -83,20 +84,20 @@ func NewCompressReader(r io.ReadCloser) (*compressReader, error) {
 	}, nil
 }
 
-// Реализация чтения. Возвращается количество прочитанных байт и ошибка.
+// Read реализует чтение. Возвращается количество прочитанных байт и ошибка.
 //
 // Параметры:
 //
-// p - байты для  записи.
+//	p - байты для  записи.
 func (c compressReader) Read(p []byte) (n int, err error) {
 	return c.zr.Read(p)
 }
 
-// Закрытие чтения. Возвращается ошибка.
+// Close закрывает читателя. Возвращается ошибка.
 //
 // Параметры:
 //
-// c - указатель на reader.
+//	c - указатель на reader.
 func (c *compressReader) Close() error {
 	if err := c.r.Close(); err != nil {
 		return err

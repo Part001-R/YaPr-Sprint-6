@@ -1,3 +1,7 @@
+// profile пакет, содержит функции для реализации профилирования.
+//
+// CPU - профилирование CPU.
+// Memory - профилирование Memory.
 package profile
 
 import (
@@ -15,7 +19,7 @@ const (
 // Сбор профиля CPU.
 func CPU() (fileCPU func() error, pprofCPU func()) {
 
-	// Файл для записи данных
+	// Файл для записи данных.
 	fcpu, err := os.Create(cpuProfileName)
 	if err != nil {
 		panic(err)
@@ -24,7 +28,7 @@ func CPU() (fileCPU func() error, pprofCPU func()) {
 		return fcpu.Close()
 	}
 
-	// Сбор профиля
+	// Сбор профиля.
 	if err := pprof.StartCPUProfile(fcpu); err != nil {
 		if ferr := fcpu.Close(); ferr != nil {
 			panic(err)
@@ -42,7 +46,7 @@ func CPU() (fileCPU func() error, pprofCPU func()) {
 // Сбор профиля памяти.
 func Memory() (fileMem func() error) {
 
-	// Файл для записи данных
+	// Файл для записи данных.
 	fmem, err := os.Create(memProfileName)
 	if err != nil {
 		panic(err)
@@ -51,7 +55,7 @@ func Memory() (fileMem func() error) {
 		return fmem.Close()
 	}
 
-	// Сбор профиля
+	// Сбор профиля.
 	runtime.GC()
 	if err := pprof.WriteHeapProfile(fmem); err != nil {
 		panic(err)

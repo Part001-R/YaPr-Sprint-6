@@ -1,3 +1,4 @@
+// main основной пакет приложения.
 package main
 
 import (
@@ -8,14 +9,14 @@ import (
 )
 
 func main() {
-	// Перехват паники
+	// Перехват паники.
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("Паника в приложении: %v\n Стек вызовов:\n%s", r, string(debug.Stack()))
 		}
 	}()
 
-	// Запуск приложения
+	// Запуск приложения.
 	if err := service.Run(); err != nil {
 		log.Fatalf("Работа прервана по причине: {%v}", err)
 	}

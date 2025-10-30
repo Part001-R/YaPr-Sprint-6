@@ -1,3 +1,4 @@
+// service основной пакет приложения.
 package service
 
 import (
@@ -36,7 +37,7 @@ type checkReasonStop struct {
 	params       *paramsURL
 }
 
-// Функция содержит подготовительные действия и серверную часть. Возвращает ошибку.
+// Run содержит подготовительные действия и серверную часть. Возвращает ошибку.
 func Run() error {
 
 	// Подготовительные действия
@@ -54,25 +55,25 @@ func Run() error {
 	return nil
 }
 
-// Функция формирует набор параметров, необходимых для работы сервера. Возвращаеются параметры и ошибка.
+// prepare формирует набор параметров, необходимых для работы сервера. Возвращаеются параметры и ошибка.
 func prepare() (*paramsURL, error) {
 
-	// Флаги
+	// Флаги.
 	flags := config.ParseFlags()
 
-	// Логгер
+	// Логгер.
 	err := logger.Initialize(flags.LogLevel)
 	if err != nil {
 		return &paramsURL{}, fmt.Errorf("ошибка в prepare: функия Initialize вернула ошибку -> <%w>", err)
 	}
 
-	// Наблюдатели
+	// Наблюдатели.
 	observer, err := prepareObserver(flags)
 	if err != nil {
 		return &paramsURL{}, fmt.Errorf("ошибка в prepare: функия prepareObserver вернула ошибку -> <%w>", err)
 	}
 
-	// БД
+	// БД.
 	var dbPtr *sql.DB
 	var funcCloseDB func()
 
@@ -89,7 +90,7 @@ func prepare() (*paramsURL, error) {
 		}
 	}
 
-	// Ссылки
+	// Сервис.
 	shortLong := handler.NewShortenerMemory()
 	shortLongDB := handler.NewShortenerDB(dbPtr)
 
@@ -99,7 +100,7 @@ func prepare() (*paramsURL, error) {
 		return &paramsURL{}, fmt.Errorf("ошибка в prepare: функция storageLongShort.LoadFileURL вернула ошибку -> <%w>", err)
 	}
 
-	// Результат
+	// Результат.
 	return &paramsURL{
 		flags:            flags,
 		closeConDB:       funcCloseDB,
@@ -108,27 +109,27 @@ func prepare() (*paramsURL, error) {
 	}, nil
 }
 
-// Функция содержит основную логику работы сервера. Возвращает ошибку.
+// server содержит основную логику работы сервера. Возвращает ошибку.
 //
 // Параметры:
 //
-// params - параметры необходимые для работы сервера.
+//	params - параметры необходимые для работы сервера.
 func server(params *paramsURL) error {
 
-	// Проверка аргументов
+	// Проверка аргументов.
 	if params == nil {
 		return errors.New("ошибка в функции server: в параметре params, нет указателя")
 	}
 
 	cr := chi.NewRouter()
 
-	// Точки входа - Shortener
+	// Точки входа - Shortener.
 	err := handlersShortener(cr, params)
 	if err != nil {
 		return fmt.Errorf("функция handlersShortener, вернула ошибку: <%w>", err)
 	}
 
-	// Действия
+	// Действия.
 	err = actions(params, cr)
 	if err != nil {
 		return fmt.Errorf("функция actions, вернула ошибку: <%w>", err)
@@ -137,15 +138,15 @@ func server(params *paramsURL) error {
 	return nil
 }
 
-// Функция выполняет запуск HTTP сервера.
+// startUpHTTPServer выполняет запуск HTTP сервера.
 //
 // Парметры:
 //
-// srv - настройки сервера.
-// txErr - канал для возврата ошибки.
+//	srv - настройки сервера.
+//	txErr - канал для возврата ошибки.
 func startUpHTTPServer(srv *http.Server, txErr chan error) {
 
-	// Проверка параметров
+	// Проверка параметров.
 	if srv == nil {
 		txErr <- errors.New("в параметре srv, нет указателя")
 		return
@@ -164,23 +165,21 @@ func startUpHTTPServer(srv *http.Server, txErr chan error) {
 	txErr <- err
 }
 
-// Функция определяет причину остановки выполнения. При штатной остановке, сохраняются метрики.
+// signalsStopRun определяет причину остановки выполнения. При штатной остановке, сохраняются метрики.
 //
 // Параметры:
 //
-// data - набор данных для обеспечения работы функции.
+//	data - набор данных для обеспечения работы функции.
 func signalsStopRun(data *checkReasonStop) error {
 
-	addr := data.srvConf.Addr
-
-	// Отложенное закрытие базы данных
+	// Отложенное закрытие базы данных.
 	defer func() {
 		if data.params.closeConDB != nil { // Приложение может запуститься без подключения к БД.
 			data.params.closeConDB()
 		}
 	}()
 
-	// Проверка аргумента
+	// Проверка аргумента.
 	if data == nil {
 		return errors.New("ошибка в signalsStopRun: data не инициализирован")
 	}
@@ -200,28 +199,29 @@ func signalsStopRun(data *checkReasonStop) error {
 		return errors.New("ошибка в signalsStopRun: params не инициализированы")
 	}
 
+	// Логика.
 	select {
 	case <-data.sigSys:
-		logger.Log.Info("сервер остановлен штатно", zap.String("address", addr))
+		logger.Log.Info("сервер остановлен штатно", zap.String("address", data.srvConf.Addr))
 		return nil
 	case err := <-data.chSrvErr:
-		logger.Log.Error("ошибка сервера", zap.String("address", addr), zap.String("ошибка", err.Error()))
+		logger.Log.Error("ошибка сервера", zap.String("address", data.srvConf.Addr), zap.String("ошибка", err.Error()))
 		return err
 	case err := <-data.chStorageErr:
-		logger.Log.Error("ошибка периодического сохранения метрик в файл", zap.String("address", addr), zap.String("ошибка", err.Error()))
+		logger.Log.Error("ошибка периодического сохранения метрик в файл", zap.String("address", data.srvConf.Addr), zap.String("ошибка", err.Error()))
 		return err
 	}
 }
 
-// Функция содержит функциональность сервера. Возвращается ошибка.
+// actions содержит функциональность сервера. Возвращается ошибка.
 //
 // Параметры:
 //
-// params - параметры для работы сервера.
-// cr - роутер.
+//	params - параметры для работы сервера.
+//	cr - роутер.
 func actions(params *paramsURL, cr *chi.Mux) error {
 
-	// Проверка аргументов
+	// Проверка аргументов.
 	if params == nil {
 		return errors.New("ошибка в функции actions: нет указателя на params")
 	}
@@ -234,7 +234,7 @@ func actions(params *paramsURL, cr *chi.Mux) error {
 		Handler: cr,
 	}
 
-	// Сигналы остановки
+	// Сигналы остановки.
 	chSrvErr := make(chan error)
 	chStorageErr := make(chan error)
 	sigSys := make(chan os.Signal, 1)
@@ -249,13 +249,13 @@ func actions(params *paramsURL, cr *chi.Mux) error {
 		params:       params,
 	}
 
-	// Запуск сервера
+	// Запуск сервера.
 	go startUpHTTPServer(srvConf, chSrvErr)
 
 	// Запуск обработчика асинхронной очистки таблицы shortener БД.
 	go asynClearShortenerTableDB(params.shortLongDB.Ptr, params.shortLongDB.ChForDelete, params.shortLongDB.ChDoDelete)
 
-	// Приём сигналов остановки
+	// Приём сигналов остановки.
 	err := signalsStopRun(data)
 	if err != nil {
 		return fmt.Errorf("функция signalsStopRun вернула ошибку: <%w>", err)
@@ -264,15 +264,15 @@ func actions(params *paramsURL, cr *chi.Mux) error {
 	return nil
 }
 
-// Функция содержит перечень точек входа сервиса сокращения ссылок. Возвращает ошибку.
+// handlersShortener содержит перечень точек входа сервиса сокращения ссылок. Возвращает ошибку.
 //
 // Параметры:
 //
-// cr - роутер.
-// р - параметры для работы.
+//	cr - роутер.
+//	р - параметры для работы.
 func handlersShortener(cr *chi.Mux, p *paramsURL) error {
 
-	// Проверка аргументов
+	// Проверка аргументов.
 	if cr == nil {
 		return errors.New("ошибка в handlersShortener: в аргументе cr нет указателя")
 	}
@@ -280,7 +280,7 @@ func handlersShortener(cr *chi.Mux, p *paramsURL) error {
 		return errors.New("ошибка в handlersShortener: в аргументе p нет указателя")
 	}
 
-	// Без аудита
+	// Без аудита.
 	cr.Group(func(r chi.Router) {
 		r.Use(p.storageLongShort.Middleware)
 
@@ -290,7 +290,7 @@ func handlersShortener(cr *chi.Mux, p *paramsURL) error {
 		r.Delete("/api/user/urls", http.HandlerFunc(p.storageLongShort.DeleteUserURLs))
 	})
 
-	// Аудит
+	// Аудит.
 	cr.Group(func(r chi.Router) {
 		r.Use(p.storageLongShort.MiddlewareAudit)
 		r.Use(p.storageLongShort.Middleware)
@@ -303,27 +303,27 @@ func handlersShortener(cr *chi.Mux, p *paramsURL) error {
 	return nil
 }
 
-// Функция реализующая асинхронную очистку таблицы shortener БД.
+// asynClearShortenerTableDB реализует асинхронную очистку таблицы shortener БД.
 //
 // Параметры:
 //
-// db - указатель на БД.
-// rxChForDelete - канал для приёма информации по удаляемой строке.
-// rxChDoDelete - канал для приёма признака завершения накопления и запуска очистки таблицы.
+//	db - указатель на БД.
+//	rxChForDelete - канал для приёма информации по удаляемой строке.
+//	rxChDoDelete - канал для приёма признака завершения накопления и запуска очистки таблицы.
 func asynClearShortenerTableDB(db *sql.DB, rxChForDelete chan handler.DeleteDB, rxChDoDelete chan struct{}) {
 
 	rxMarkData := make([]handler.DeleteDB, 0)
 
 	for {
 		select {
-		case deleteData, ok := <-rxChForDelete: // накопление данных для удаления
+		case deleteData, ok := <-rxChForDelete: // Накопление данных для удаления.
 			if !ok {
 				logger.Log.Error("Ошибка при получении данных из канала. Канал закрыт")
 				return
 			}
 			rxMarkData = append(rxMarkData, deleteData)
 
-		case <-rxChDoDelete: // приём признака завершения накопления
+		case <-rxChDoDelete: // Приём признака завершения накопления.
 
 			if len(rxMarkData) > 0 {
 
@@ -352,7 +352,7 @@ func asynClearShortenerTableDB(db *sql.DB, rxChForDelete chan handler.DeleteDB, 
 						cnt++
 					}
 				}
-				// Очистка накопления
+				// Очистка накопления.
 				rxMarkData = make([]handler.DeleteDB, 0)
 
 				logger.Log.Info("Очистка таблицы shortener завершена",
@@ -363,16 +363,16 @@ func asynClearShortenerTableDB(db *sql.DB, rxChForDelete chan handler.DeleteDB, 
 	}
 }
 
-// Подготовка наблюдателей. Возвращается интерфей наблюдателя и ошибка.
+// prepareObserver выполняет подготовку наблюдателей. Возвращается интерфей наблюдателя и ошибка.
 //
 // Параметры:
 //
-// flags - флаги.
+//	flags - флаги.
 func prepareObserver(flags config.Config) (observer.Action, error) {
 
 	obsSrc := observer.NewObserver()
 
-	// Добавление аудитора - файл
+	// Добавление аудитора - файл.
 	if flags.AuditFile != "" {
 		name := "file"
 
@@ -380,7 +380,7 @@ func prepareObserver(flags config.Config) (observer.Action, error) {
 		obsSrc.RegistrationObserver(obsFile)
 	}
 
-	// Добавление аудитора - HTTP
+	// Добавление аудитора - HTTP.
 	if flags.AuditURL != "" {
 		name := "http"
 

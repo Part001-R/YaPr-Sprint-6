@@ -1,3 +1,5 @@
+// observerfile пакет наблюдателя file. Секция типов данных.
+// Содержит конструктор.
 package observerfile
 
 import (
@@ -6,19 +8,24 @@ import (
 	"github.com/Part001-R/YaPr-Sprint-6/internal/service/observer"
 )
 
-// Представление наблюдателя
+// Представление наблюдателя.
 type obsFile struct {
 	name     string
 	filePath string
 }
 
-// экземпляр наблюдателя
+// экземпляр наблюдателя.
 var obs *obsFile
 
-// Обеспечение единоразовой инициализации
+// Обеспечение единоразовой инициализации.
 var once sync.Once
 
-// Конструктор
+// NewObserverFile конструктор. Возвращается интерфейс наблюдателя.
+//
+// Параметры:
+//
+//	obsID - ID наблюдателя.
+//	filePath - путь к файлу.
 func NewObserverFile(obsID, filePath string) observer.ActionsObservers {
 	once.Do(func() {
 		obs = &obsFile{

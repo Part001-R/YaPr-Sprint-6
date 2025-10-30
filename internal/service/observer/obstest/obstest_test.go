@@ -14,9 +14,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Test_RegistrationObserver_SUCCESS тест добавления наблюдателя.
 func Test_RegistrationObserver_SUCCESS(t *testing.T) {
 
-	// Наблюдатели
+	// Наблюдатели.
 	obsFileID := "file"
 	obsFilePath := "./foo.json"
 	obsFile := observerfile.NewObserverFile(obsFileID, obsFilePath)
@@ -25,14 +26,14 @@ func Test_RegistrationObserver_SUCCESS(t *testing.T) {
 	obsHTTPURL := "http://foo.bar"
 	obsURL := observerurl.NewObserverURL(obsHTTPID, obsHTTPURL)
 
-	// Источник
+	// Источник.
 	obsSrc := observer.NewObserver()
 
-	// Регистрация наблюдателей
+	// Регистрация наблюдателей.
 	obsSrc.RegistrationObserver(obsFile)
 	obsSrc.RegistrationObserver(obsURL)
 
-	// Проверка регистрации
+	// Проверка регистрации.
 	rxObsFileID := obsFile.GetID()
 	assert.Equalf(t, obsFileID, rxObsFileID, "ожидалось <%s>, а принято <%s>", obsFileID, rxObsFileID)
 
@@ -40,20 +41,21 @@ func Test_RegistrationObserver_SUCCESS(t *testing.T) {
 	assert.Equalf(t, obsHTTPID, rxObsHTTPID, "ожидалось <%s>, а принято <%s>", obsHTTPID, rxObsHTTPID)
 }
 
+// Test_UnRegistrationObserver_SUCCESS тест удаления наблюдателя.
 func Test_UnRegistrationObserver_SUCCESS(t *testing.T) {
 
-	// Наблюдатели
+	// Наблюдатели.
 	obsFileID := "file"
 	obsFilePath := "./foo.json"
 	obsFile := observerfile.NewObserverFile(obsFileID, obsFilePath)
 
-	// Источник
+	// Источник.
 	obsSrc := observer.NewObserver()
 
-	// Регистрация наблюдателей
+	// Регистрация наблюдателей.
 	obsSrc.RegistrationObserver(obsFile)
 
-	// Передача события
+	// Передача события.
 	file, err := os.OpenFile(obsFilePath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
 	require.NoErrorf(t, err, "неожиданная ошибка при открытии файла <%v>", err)
 
@@ -68,10 +70,10 @@ func Test_UnRegistrationObserver_SUCCESS(t *testing.T) {
 	}()
 
 	type AuditEvent struct {
-		Timestamp int64  `json:"ts"`                // unix timestamp события
-		Action    string `json:"action"`            // действие: shorten (создание) или follow (прохождение по ссылке)
-		UserID    string `json:"user_id,omitempty"` // идентификатор пользователя, если есть
-		URL       string `json:"url"`               // оригинальный (не сокращённый) URL
+		Timestamp int64  `json:"ts"`                // unix timestamp события.
+		Action    string `json:"action"`            // действие: shorten (создание) или follow (прохождение по ссылке).
+		UserID    string `json:"user_id,omitempty"` // идентификатор пользователя, если есть.
+		URL       string `json:"url"`               // оригинальный (не сокращённый) URL.
 	}
 
 	tn := time.Now().Unix()
@@ -85,7 +87,7 @@ func Test_UnRegistrationObserver_SUCCESS(t *testing.T) {
 
 	obsSrc.Notify(observer.AuditEvent(msg))
 
-	// Проверка записи данных в файл
+	// Проверка записи данных в файл.
 	data, err := os.ReadFile(obsFilePath)
 	require.NoErrorf(t, err, "ошибка при чтении файла <%v>", err)
 
@@ -94,14 +96,14 @@ func Test_UnRegistrationObserver_SUCCESS(t *testing.T) {
 	rxStr := strings.TrimSpace(string(data))
 	assert.Equalf(t, wantMsg, rxStr, "некорректный URL: ожидалось <%s>, получено <%s>", wantMsg, rxStr)
 
-	// Удаление наблюдателя
+	// Удаление наблюдателя.
 	obsSrc.UnRegistrationObserver(obsFile)
 
-	// Передача второго сообщения
-	// Сообщение не должно быть передано, т.к. выполнено удаление
+	// Передача второго сообщения.
+	// Сообщение не должно быть передано, т.к. выполнено удаление.
 	obsSrc.Notify(observer.AuditEvent(msg))
 
-	// Проверка записи данных в файл
+	// Проверка записи данных в .
 	data, err = os.ReadFile(obsFilePath)
 	require.NoErrorf(t, err, "ошибка при чтении файла <%v>", err)
 
@@ -109,20 +111,21 @@ func Test_UnRegistrationObserver_SUCCESS(t *testing.T) {
 	assert.Equalf(t, wantMsg, rxStr, "некорректный URL: ожидалось <%s>, получено <%s>", wantMsg, rxStr)
 }
 
+// Test_Notify_SUCCESS тест оповещения наблюдателей.
 func Test_Notify_SUCCESS(t *testing.T) {
 
-	// Наблюдатели
+	// Наблюдатели.
 	obsFileID := "file"
 	obsFilePath := "./foo.json"
 	obsFile := observerfile.NewObserverFile(obsFileID, obsFilePath)
 
-	// Источник
+	// Источник.
 	obsSrc := observer.NewObserver()
 
-	// Регистрация наблюдателей
+	// Регистрация наблюдателей.
 	obsSrc.RegistrationObserver(obsFile)
 
-	// Передача события
+	// Передача события.
 	file, err := os.OpenFile(obsFilePath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
 	require.NoErrorf(t, err, "неожиданная ошибка при открытии файла <%v>", err)
 
@@ -137,10 +140,10 @@ func Test_Notify_SUCCESS(t *testing.T) {
 	}()
 
 	type AuditEvent struct {
-		Timestamp int64  `json:"ts"`                // unix timestamp события
-		Action    string `json:"action"`            // действие: shorten (создание) или follow (прохождение по ссылке)
-		UserID    string `json:"user_id,omitempty"` // идентификатор пользователя, если есть
-		URL       string `json:"url"`               // оригинальный (не сокращённый) URL
+		Timestamp int64  `json:"ts"`                // unix timestamp события.
+		Action    string `json:"action"`            // действие: shorten (создание) или follow (прохождение по ссылке).
+		UserID    string `json:"user_id,omitempty"` // идентификатор пользователя, если есть.
+		URL       string `json:"url"`               // оригинальный (не сокращённый) URL.
 	}
 
 	tn := time.Now().Unix()
@@ -152,10 +155,10 @@ func Test_Notify_SUCCESS(t *testing.T) {
 		URL:       "http://bar.com",
 	}
 
-	// Оповещение
+	// Оповещение.
 	obsSrc.Notify(observer.AuditEvent(msg))
 
-	// Проверка записи данных в файл
+	// Проверка записи данных в файл.
 	data, err := os.ReadFile(obsFilePath)
 	require.NoErrorf(t, err, "ошибка при чтении файла <%v>", err)
 
